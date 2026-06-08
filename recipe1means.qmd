@@ -11,6 +11,8 @@ execute:
 ```{python}
 #| label: imports
 
+import pandas as pd
+
 from plotnine import *
 from plotnine.layer import layer
 from plotnine.session import last_plot
@@ -44,19 +46,15 @@ Let's get started!  Our objective in this first 'recipe' is to be able to compos
 ```
 
 
-```{pyodide}
+```{python}
 #| echo: false
 #| warning: false
 from plotnine import *
 from plotnine.data import penguins
 
-penguins_medians = (
-    penguins[["bill_length_mm", "bill_depth_mm"]]
-    .median()
-    .to_frame()
-    .T
-    .add_suffix("_median")
-)
+penguins_medians = pd.DataFrame(
+   [penguins[["bill_length_mm", "bill_depth_mm"]].median()]
+).add_suffix("_median")
 
 (
   ggplot(penguins)
@@ -87,7 +85,7 @@ from plotnine.data import penguins
 penguins.head()
 ```
 
-## Step 0: use base ggplot2 to get the job done
+## Step 0: use base ggplot to get the job done
 
 
 It's a good idea to get things done without Stat extension first, just using 'base' ggplot2. The computational moves you make here can serve a reference for building our extension function.
@@ -95,13 +93,9 @@ It's a good idea to get things done without Stat extension first, just using 'ba
 
 ```{python}
 #| label: penguins
-penguins_medians = (
-    penguins[["bill_length_mm", "bill_depth_mm"]]
-    .median()
-    .to_frame()
-    .T
-    .add_suffix("_median")
-)
+penguins_medians = pd.DataFrame(
+   [penguins[["bill_length_mm", "bill_depth_mm"]].median()]
+).add_suffix("_median")
 
 (
   ggplot(penguins)
@@ -140,7 +134,7 @@ Now you are ready to begin building your extension function. The first step is t
 import pandas as pd
 
 def compute_group_medians(data, scales=None):
-    return data[["x", "y"]].median().to_frame().T
+    return pd.DataFrame([data[["x", "y"]].median()])
 ```
 
 ::: {.callout-note collapse="false"}
@@ -156,9 +150,12 @@ def compute_group_medians(data, scales=None):
 # Test compute. 
 (
     penguins
-    .eval("x = bill_depth_mm")
-    .eval("y = bill_length_mm")
-    [["x", "y"]]
+    .rename(
+        columns={
+            "bill_depth_mm": "x",
+            "bill_length_mm": "y"
+        }
+    )
     .pipe(compute_group_medians)
 )
 ```
@@ -334,7 +331,7 @@ Here is a quick review of the functions and ggproto objects we've covered, dropp
 ```{python}
 # Step 1. Define compute
 def compute_group_medians(data, scales=None):
-    return data[['x', 'y']].median().to_frame().T
+    return pd.DataFrame([data[["x", "y"]].median()])
 
 
 # Step 2. Define Stat
@@ -361,8 +358,10 @@ Using the `geom_medians` Recipe #1 as a reference, try to create a `geom_means()
 ### Step 00: load libraries, data
 ```{pyodide}
 #| setup: true
-#| exercise: geom_means_data
+#| exercise: geom_means
 #| warning: false
+
+import pandas as pd
 
 from plotnine import *
 from plotnine.data import penguins
@@ -373,28 +372,23 @@ penguins.head()
 ### Step 0: Use base plotnine to get the job done
 
 ```{pyodide}
-#| exercise: geom_means_0
+#| exercise: geom_means
 # Step 0: Use base plotnine to get the job done
 
-(
-    penguins[["bill_length_mm", "___"]]
-    .___()
-    .to_frame()
-    .T
-    .add_prefix("mean_")
-)
-
+penguins_means = pd.DataFrame(
+   [penguins[["bill_length_mm", "___"]].___()]
+).add_prefix("mean_")
 
 (
   ggplot(penguins)
   + aes(x="bill_depth_mm", y="bill_length_mm")
   + geom_point()
   + geom_point(
-      data=penguins_medians,
-      aes(x="mean_bill_depth_mm", y="___")
+      aes(x="mean_bill_depth_mm", y="___"),
+      data=penguins_means,
       size=8,
       color="red",
-   )
+  )
 )
 ```
 
@@ -405,14 +399,17 @@ penguins.head()
 # Define.
 
 def compute_group_means(data, scales=None):
-    return data[["x", "y"]].mean().to_frame().T
+    return pd.DataFrame([data[["x", "y"]].mean()])
 
 # Test.
 (
     penguins
-    .eval("x = bill_depth_mm")
-    .eval("___ = bill_length_mm")
-    [["x", "y"]]
+    .rename(
+        columns={
+            "bill_depth_mm": "x",
+            "bill_length_mm": "___"
+        }
+    )
     .pipe(compute_group_means)
 )
 ```
@@ -440,7 +437,6 @@ class stat_means(stat):
 ```
 
 
-
 ### Step 3: Write Geom.
 
 ```{pyodide}
@@ -463,77 +459,3 @@ class geom_medians(geom_point):
 # Next up: Recipe 2 `geom_id()`
 
 How would you write the function which annotates coordinates (x,y) for data points on a scatterplot? Go to [Recipe 2](./recipe2coordinates.qmd).
-
-
-
-
-
-::: {.callout-note collapse="true"}
-### Pro tip: check out `stat_manual()` for one-off, group-wise compute in the next ggplot2 release or [`statexpress.qstat()`](https://github.com/EvaMaeRey/statexpress) for a quick stat short-cut in extension explorations.
-
-```{python}
-from statexpress import qstat, qstat_panel, qstat_layer
-```
-
-Examples follow:
-
-```{python}
-#| eval: false
-
-def mean_fun(data, scales):
-   return data[["x", "y"]].mean().to_frame().T
-
-(
-   ggplot(penguins)
-   + aes(x="bill_length_mm", y="bill_length_mm")
-   + geom_point()
-   + geom_point(stat=qstat(mean_fun))
-)
-```
-
-
-```{python}
-#| eval: false
-## Consider statexpress.qstat_*() functions for more
-## flexibility and exploratory extension work
-def mean_fun(data, scales):
-   return data[["x", "y"]].mean().to_frame().T
-
-(
-   ggplot(penguins)
-   + aes(x="bill_length_mm", y="bill_length_mm")
-   + geom_point()
-   + geom_point(stat=qstat(mean_fun), size=8)
-)
-
-
-#--------------------------------------------------
-
-## option 2, use geom_point(stat = "manual")
-
-def means_fun2(data):
-   return data[["x", "y"]].mean().to_frame().T
-
-# TODO: uncomment stat_manual() example when it's available in plotnine
-### usage A (geom )
-(
-   ggplot(penguins)
-   + aes(x="bill_length_mm", y="bill_length_mm")
-   + geom_point()
-#    + geom_point(stat="manual", fun=means_fun2, size=8)
-)
-
-
-### usage B (geom)
-
-(
-    ggplot(penguins)
-    + aes(x="bill_length_mm", y="bill_length_mm")
-    # + stat_manual(
-    #     size=8,  # geom default is "point"
-    #     fun=means_fun2
-    # )
-)
-```
-
-:::

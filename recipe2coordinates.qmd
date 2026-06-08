@@ -334,7 +334,7 @@ In this next section, we define user-facing `geom_*` classes. In plotnine, creat
 
 ### Define `geom_*()` class
 
-> 'Most plotnine users are accustomed to adding geoms, not stats, when building up a plot.' *ggplot2: Elegant Graphics for Data Analysis*.
+> 'Most users are accustomed to adding geoms, not stats, when building up a plot.' *ggplot2: Elegant Graphics for Data Analysis*.
 
 Because plotnine users may be more accustomed to using layers that have the `geom_` prefix, you might define a `geom_` class with the same properties as the `stat_`. Here we subclass `geom_label` and set the default stat to `"index"`.
 
@@ -455,7 +455,11 @@ Using the `geom_index()` Recipe #2 as a reference, try to create a `stat_coordin
 
 ```{pyodide}
 #| setup: true
-#| exercise: geom_coordinates_00
+#| exercise:
+#|   - geom_coordinates_1
+#|   - geom_coordinates_2
+#|   - geom_coordinates_3
+#|   - geom_coordinates_4
 #| warning: false
 
 import pandas as pd
@@ -469,7 +473,7 @@ cars.head()
 ### Step 0: Use base plotnine to get the job done
 
 ```{pyodide}
-#| exercise: geom_coordinates_0
+#| exercise: geom_coordinates_1
 # Step 0: Use base plotnine to get the job done.
 (
     ggplot(
@@ -490,7 +494,7 @@ cars.head()
 ### Step 1: Write compute function. Test.
 
 ```{pyodide}
-#| exercise: geom_coordinates_1
+#| exercise: geom_coordinates_2
 # Define.
 def compute_group_coordinates(data, scales=None):
     return data.assign(
@@ -511,7 +515,7 @@ def compute_group_coordinates(data, scales=None):
 
 
 ```{pyodide}
-#| exercise: geom_coordinates_2
+#| exercise: geom_coordinates_3
 # Define.
 class stat_coordinates(stat):
     REQUIRED_AES = {"x", "____"}
@@ -539,7 +543,7 @@ class stat_coordinates(stat):
 
 
 ```{pyodide}
-#| exercise: geom_coordinates_3
+#| exercise: geom_coordinates_4
 # Define geom_coordinates
 class geom_coordinates(____):
     DEFAULT_PARAMS = {

@@ -141,11 +141,11 @@ def compute_panel_cat_lm(data, scales=None):
 **... that we prepare the data to have columns with names `x`, `y`, and `cat` before testing `compute_panel_cat_lm`.** Computation will fail if these names are not present given our function definition.  Internally in a plot, columns are named based on aesthetic mapping, e.g. `aes(x="bill_depth_mm", y="bill_length_mm", cat="species")`.
 :::
 
-## Step 2: Define new Stat. Test.
+## Step 2: Define new stat. Test.
 
 Next, we define a new stat class — which will let us do computation under the hood while building our plot.
 
-### Define Stat
+### Define stat
 
 ```{python}
 #| label: stat_cat_lm
@@ -171,7 +171,7 @@ class stat_cat_lm(stat):  # <1> <2>
 4. **... that setting `REQUIRED_AES` to `{"x", "y", "cat"}` is consistent with compute requirements.** The compute assumes data to be a DataFrame with columns `x`, `y`, and `cat`. Specifying `REQUIRED_AES` in your stat can improve your user interface because standard plotnine error messages will issue when required aesthetics are not specified, e.g. "`stat_cat_lm()` requires the following missing aesthetics: `x`."
 :::
 
-### Test Stat
+### Test stat
 
 You can test out your stat by using it in plotnine `geom_*()` functions.
 
@@ -310,7 +310,7 @@ def compute_panel_cat_lm(data, scales=None):
     model = smf.ols("y ~ x + C(cat)", data=data).fit()
     return data.assign(y=model.fittedvalues)
 
-# Step 2. Define Stat
+# Step 2. Define stat
 class stat_cat_lm(stat):
     REQUIRED_AES = {"x", "y", "cat"}
     DEFAULT_PARAMS = {"geom": "line"}
@@ -318,7 +318,7 @@ class stat_cat_lm(stat):
     def compute_panel(self, data, scales):
         return compute_panel_cat_lm(data)
 
-# Step 3. Define Geom
+# Step 3. Define geom
 class geom_cat_lm(geom_line):
     DEFAULT_PARAMS = {
         "stat": "cat_lm",
@@ -401,7 +401,7 @@ def compute_panel_cat_residuals(data, scales=None):
 )
 ```
 
-### Step 2: Write Stat.
+### Step 2: Write stat.
 
 ```{pyodide}
 #| exercise: geom_cat_fitted_2

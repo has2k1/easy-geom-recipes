@@ -23,13 +23,13 @@ from plotnine.data import penguins
 
 In this first recipe, we'll look at simple examples of defining a new `geom_*()` function, `geom_medians()` and `geom_means()`.  
 
-Each `geom_*()` function (layer) is defined by three major elements: a `Geom`, a `Stat`, and a `position`.  The simplest among these to create is a new `Stat`, so the 'Easy recipes' start with these. And while simple, `Stats` are also powerful because they allow you compute to be integrated into your plotting pipeline --- that you would otherwise might need to do 'manually' before plotting.  
+Each `geom_*()` function (layer) is defined by three major elements: a `geom`, a `stat`, and a `position`.  The simplest among these to create is a new `stat`, so the 'Easy recipes' start with these. And while simple, `stats` are also powerful because they allow you compute to be integrated into your plotting pipeline --- that you would otherwise might need to do 'manually' before plotting.  
 
-Along with writing the `geom_\*()` function, we'll write a `stat_*()` function, which is pretty typical for seasoned plotnine developers when writing `Stats`. It's okay if *you* don't typically write your plots with `stat_*()` functions -- you can use just use the `geom_*()` functions if you like.
+Along with writing the `geom_\*()` function, we'll write a `stat_*()` function, which is pretty typical for seasoned plotnine developers when writing `stat`s. It's okay if *you* don't typically write your plots with `stat_*()` functions -- you can use just use the `geom_*()` functions if you like.
 
 ::: {.callout-tip}
 
-# Note that in the plotnine extension context, the word 'layer' *only* refers to `geom_*()`, `stat_*()`, and `annotate()` functions.  These all use the `layer()` function internally -- a function that requires --- you guessed it --- a `Geom`, a `Stat`, and a `position`!
+# Note that in the plotnine extension context, the word 'layer' *only* refers to `geom_*()`, `stat_*()`, and `annotate()` functions.  These all use the `layer()` function internally -- a function that requires --- you guessed it --- a `geom`, a `stat`, and a `position`!
 
 :::
 
@@ -107,7 +107,7 @@ penguins_medians = pd.DataFrame(
 ::: {.callout-tip collapse="true"}
 ### Pro tip.  Use `ggplot.layer_data()` to inspect plotnine\'s internal data ...
 
-Use `ggplot.layer_data()` to inspect the render-ready data internal in the plot.  Your Stat will help prep data to look something like this.
+Use `ggplot.layer_data()` to inspect the render-ready data internal in the plot.  Your `stat` will help prep data to look something like this.
 
 ```{python}
 last_plot().layer_data(i=1) # layer 2, the computed means, is of interest
@@ -158,11 +158,11 @@ def compute_group_medians(data, scales=None):
 **... that we prepare the data to have columns with names `x` and `y` before testing.**  Computation will fail if variables `x` and `y` are not present given the function's definition.  In a plotting setting, columns are renamed by mapping aesthetics, e.g. `aes(x="bill_depth", y="bill_length")`.
 :::
 
-## Step 2: Define new Stat. Test.
+## Step 2: Define new `stat`. Test.
 
 Next, we define a new _stat_ by subclassing plotnine's `stat` class - which will let us do computation under the hood while building our plot.
 
-### Define Stat.
+### Define stat.
 
 ```{python}
 #| label: stat_medians
@@ -190,7 +190,7 @@ class stat_medians(stat):
 :::
 
 
-### Test Stat.
+### Test stat.
 
 You can test out your _stat_ by using it in plotnine `geom_*()` functions.
 
@@ -210,7 +210,7 @@ You can test out your _stat_ by using it in plotnine `geom_*()` functions.
 **... that we don't use `"medians"` as the `stat` argument. But you could!**  If you prefer, you could write `geom_point(stat="medians", size=7)` which will direct to your new `stat_medians` under the hood.
 :::
 
-### Test Stat group-wise behavior
+### Test stat group-wise behavior
 
 Test group-wise behavior by using a discrete variable with an group-triggering aesthetic like color, fill, or group, or by faceting.
 
@@ -221,15 +221,15 @@ last_plot() + aes(color="species")
 :::  {.callout-tip collapse="true"}
 # Pro tip: Think about an early exit (don't define a user-facing function) ...
 
-You might be thinking, what we've done would already be pretty useful to me.  Can I just use my Stat as-is within `geom_*()` functions?  
+You might be thinking, what we've done would already be pretty useful to me.  Can I just use my `stat` as-is within `geom_*()` functions?  
 
-The short answer is 'yes'!  If you just want to use the Stat yourself locally in a script, there might not be much reason to go on to Step 3, user-facing functions.  But if you have a wider audience in mind, i.e. internal to organization or open sourcing in a package, probably a more succinct expression of what functionality you deliver will be useful - i.e. write the user-facing functions.
+The short answer is 'yes'!  If you just want to use the `stat` yourself locally in a script, there might not be much reason to go on to Step 3, user-facing functions.  But if you have a wider audience in mind, i.e. internal to organization or open sourcing in a package, probably a more succinct expression of what functionality you deliver will be useful - i.e. write the user-facing functions.
 :::
 
 :::   {.callout-tip collapse="true"}
-# Pro tip: consider using `layer()` function to test instead of `geom_*(stat = StatNew)`
+# Pro tip: consider using `layer()` function to test instead of `geom_*(stat = stat_new)`
 
-Instead of using a `geom_*()` function, you might prefer to use the `layer()` function in your testing step.  Occasionally, you *must* to go this route; for example, `geom_vline()` contain no `stat` argument, but you can use the GeomVline in `layer()`.  If you are teaching this content, using `layer()` may help you better connect this step with the next, defining the user-facing functions.  
+Instead of using a `geom_*()` function, you might prefer to use the `layer()` function in your testing step.  Occasionally, you *must* to go this route; for example, `geom_vline()` contain no `stat` argument, but you can use the `geom_vline` in `layer()`.  If you are teaching this content, using `layer()` may help you better connect this step with the next, defining the user-facing functions.  
 
 A test of `stat_medians` using this method follows.  You can see it is a little more verbose, as there is no default for the position argument, and setting the size must be handled with a little more care.
 
@@ -256,7 +256,7 @@ A test of `stat_medians` using this method follows.  You can see it is a little 
 > 'Most users are accustomed to adding geoms, not stats, when building up a plot.' *ggplot2: Elegant Graphics for Data Analysis*.
 
 Because plotnine users may be more accustomed to using layers that have the `geom_` prefix, you might also define a `geom_` class with almost the same properties as the `stat_`.
-Here we simply subclass `geom_point` and point its default `stat` at our new Stat.
+Here we simply subclass `geom_point` and point its default _stat_ at our new _stat_.
 Following plotnine conventions, this `geom_`-prefixed class fixes the `geom` while leaving the `stat` flexible.
 
 ```{python}
@@ -286,7 +286,7 @@ class geom_medians(geom_point):
 last_plot() + aes(color="species")
 ```
 
-### Test stat_*() function with another Geom.
+### Test stat_*() function with another geom.
 
 ```{python}
 (
@@ -307,7 +307,7 @@ Here is a quick review of the functions and classes we've covered, dropping test
 def compute_group_medians(data, scales=None):
     return pd.DataFrame([data[["x", "y"]].median()])
 
-# Step 2. Define Stat
+# Step 2. Define stat
 class stat_medians(stat):
     REQUIRED_AES = {"x", "y"}
     DEFAULT_PARAMS = {"geom": "point"}
@@ -315,7 +315,7 @@ class stat_medians(stat):
     def compute_group(self, data, scales):
         return compute_group_medians(data)
 
-# Step 3. Define Geom
+# Step 3. Define geom
 class geom_medians(geom_point):
     DEFAULT_PARAMS = {"stat": "medians"}
 ```
@@ -385,7 +385,7 @@ def compute_group_means(data, scales=None):
 )
 ```
 
-### Step 2: Write Stat.
+### Step 2: Write stat.
 
 ```{pyodide}
 #| exercise: geom_means_3
@@ -407,7 +407,7 @@ class stat_means(stat):
 )
 ```
 
-### Step 3: Write Geom.
+### Step 3: Write geom.
 
 ```{pyodide}
 #| exercise: geom_means_4

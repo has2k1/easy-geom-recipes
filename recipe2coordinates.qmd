@@ -150,7 +150,7 @@ def compute_group_index(data, scales=None):
 **... that we prepare the data to have columns with names `x` and `y` before testing.**  Computation will fail if variables `x` and `y` are not present given the function's definition.  In a plotting setting, columns are renamed by mapping aesthetics, e.g. `aes(x="speed", y="dist")`.
 :::
 
-## Step 2: Define new Stat. Test.
+## Step 2: Define new stat. Test.
 
 Next, we define a new stat class — which will let us do computation under the hood while building our plot.
 
@@ -238,7 +238,7 @@ class stat_index_panel(stat):
 
 The indexing (row_numbers) are not computed within the T/F computed color variable `speed > 15`, but across the panel (facet).
 
-The exercises that follow will specify `compute_panel` for the Stat objects throughout.
+The exercises that follow will specify `compute_panel` for the stat objects throughout.
 
 :::
 
@@ -334,7 +334,7 @@ class geom_index(geom_label):
 last_plot() + aes(color="speed > 15")
 ```
 
-### Use stat_*() function with another Geom
+### Use stat_*() function with another geom
 
 ```{python}
 (
@@ -358,7 +358,7 @@ Here is a quick review of the classes we've covered, dropping tests and discussi
 def compute_group_index(data, scales=None):
     return data.assign(label=range(1, len(data) + 1))
 
-# Step 2. Define Stat
+# Step 2. Define stat
 class stat_index(stat):
     REQUIRED_AES = {"x", "y"}
     DEFAULT_PARAMS = {"geom": "label"}
@@ -366,7 +366,7 @@ class stat_index(stat):
     def compute_group(self, data, scales):
         return compute_group_index(data)
 
-# Step 3. Define Geom
+# Step 3. Define geom
 class geom_index(geom_label):
     DEFAULT_PARAMS = {
         "stat": "index",
@@ -449,7 +449,7 @@ def compute_group_coordinates(data, scales=None):
 )
 ```
 
-### Step 2: Write Stat.
+### Step 2: Write stat.
 
 ```{pyodide}
 #| exercise: geom_coordinates_3

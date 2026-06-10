@@ -148,11 +148,11 @@ def compute_panel_bal_point(data, scales=None):
 **... that we prepare the data to have columns with names `x` and `y` before testing `compute_panel_bal_point`.** Computation will fail if the names `x` and `y` are not present given our function definition.  Internally in a plot, columns are named based on aesthetic mapping, e.g. `aes(x="response", y="freq")`.
 :::
 
-## Step 2: Define new Stat. Test.
+## Step 2: Define new stat. Test.
 
 Next, we define a new stat class — which will let us do computation under the hood while building our plot.
 
-### Define Stat.
+### Define stat.
 
 ```{python}
 #| label: stat_bal_point
@@ -178,7 +178,7 @@ class stat_bal_point(stat):  # <1> <2>
 
 :::
 
-### Test Stat.
+### Test stat.
 
 You can test out your stat by using it in plotnine `geom_*()` functions.
 
@@ -275,7 +275,7 @@ def compute_panel_bal_point(data, scales=None):
     x_bal = (data["x"] * data["y"]).sum() / data["y"].sum()
     return data.head(1).assign(x=x_bal, y=0)
 
-# Step 2. Define Stat
+# Step 2. Define stat
 class stat_bal_point(stat):
     REQUIRED_AES = {"x", "y"}
     DEFAULT_PARAMS = {"geom": "point"}
@@ -283,7 +283,7 @@ class stat_bal_point(stat):
     def compute_panel(self, data, scales):
         return compute_panel_bal_point(data)
 
-# Step 3. Define Geom
+# Step 3. Define geom
 class geom_bal_point(geom_point):
     DEFAULT_PARAMS = {"stat": "bal_point"}
 ```
@@ -362,7 +362,7 @@ def compute_panel_support(data, scales=None):
 )
 ```
 
-### Step 2: Write Stat
+### Step 2: Write stat
 
 ```{pyodide}
 #| exercise: geom_support_2

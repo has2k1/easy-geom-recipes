@@ -2,26 +2,8 @@
 title: "Recipe 4: geom_cat_lm(), geom_cat_fitted(), and geom_cat_residuals()"
 pyodide:
   packages:
-    - plotnine
-execute:
-  echo: false
-  warning: false
+    - plotnine>=0.16.0a9
 ---
-
-```{python}
-#| label: imports
-
-import pandas as pd
-import statsmodels.formula.api as smf
-from plotnine import *
-from plotnine.layer import layer
-from plotnine.stats.stat import stat
-from plotnine.session import last_plot
-from plotnine.data import penguins
-
-penguins_clean = penguins.dropna()
-```
-
 
 # Example recipe #4:  `geom_cat_lm()`
 
@@ -38,7 +20,7 @@ Our first goal is to be able to specify a plot with newly created `geom_cat_lm()
 )
 ```
 
-```{pyodide}
+```{python}
 #| echo: false
 #| warning: false
 import pandas as pd
@@ -70,21 +52,21 @@ class geom_cat_lm(geom_line):
 )
 ```
 
-
-
 Let's get started!
 
 ## Step 0: use base plotnine to get the job done
 
 
-It's a good idea to look at how you'd get things done without Stat extension first, just using 'base' plotnine. The computational moves you make here can serve as a reference for building our extension function.
+It's a good idea to look at how you'd get things done without stat extension first, just using 'base' plotnine. The computational moves you make here can serve as a reference for building our extension function.
 
 ```{python}
 #| label: base-approach
-
 import pandas as pd
 import statsmodels.formula.api as smf
+from plotnine import *
 from plotnine.data import penguins
+from plotnine.layer import layer
+from plotnine.session import last_plot
 
 penguins_clean = penguins.dropna()
 
@@ -115,7 +97,6 @@ Use `ggplot.layer_data()` to inspect the render-ready data internal in the plot.
 ```{python}
 last_plot().layer_data(i=1).head()  # the fitted y (not the raw data y) is of interest
 ```
-
 :::
 
 ## Step 1: Define compute. Test.
@@ -124,14 +105,12 @@ Now you are ready to begin building your extension function. The first step is t
 
 ```{python}
 #| label: compute_panel_cat_lm
-
 import statsmodels.formula.api as smf
 
 def compute_panel_cat_lm(data, scales=None):
     model = smf.ols("y ~ x + C(cat)", data=data).fit()
     return data.assign(y=model.fittedvalues)
 ```
-
 
 ::: {.callout-note collapse="false"}
 # You may have noticed ...
@@ -143,12 +122,10 @@ def compute_panel_cat_lm(data, scales=None):
 3. **... that we use `C(cat)` in the formula.**  This tells statsmodels to treat `cat` as a categorical variable in the model, equivalent to R's automatic factor handling in `lm()`.
 :::
 
-
 ### Test compute.
 
-
 ```{python}
-## Test compute.
+## Test
 (
     penguins_clean
     .rename(columns={"bill_depth_mm": "x", "bill_length_mm": "y", "species": "cat"})
@@ -164,18 +141,14 @@ def compute_panel_cat_lm(data, scales=None):
 **... that we prepare the data to have columns with names `x`, `y`, and `cat` before testing `compute_panel_cat_lm`.** Computation will fail if these names are not present given our function definition.  Internally in a plot, columns are named based on aesthetic mapping, e.g. `aes(x="bill_depth_mm", y="bill_length_mm", cat="species")`.
 :::
 
-
-
 ## Step 2: Define new Stat. Test.
 
 Next, we define a new stat class — which will let us do computation under the hood while building our plot.
 
-### Define Stat.
-
+### Define Stat
 
 ```{python}
 #| label: stat_cat_lm
-
 from plotnine.stats.stat import stat
 
 class stat_cat_lm(stat):  # <1> <2>
@@ -186,7 +159,6 @@ class stat_cat_lm(stat):  # <1> <2>
         return compute_panel_cat_lm(data)
 ```
 
-
 ::: {.callout-note collapse="false"}
 # You may have noticed ...
 
@@ -196,12 +168,10 @@ class stat_cat_lm(stat):  # <1> <2>
 
 3. **... that the `compute_panel_cat_lm` function is called in the `compute_panel` method.** This means that data will be transformed panel-wise (by facet), not group-wise.
 
-4. **... that setting `REQUIRED_AES` to `{"x", "y", "cat"}` is consistent with compute requirements.** The compute assumes data to be a DataFrame with columns `x`, `y`, and `cat`. Specifying `REQUIRED_AES` in your stat can improve your user interface because standard plotnine error messages will issue when required aesthetics are not specified, e.g. '`stat_cat_lm()` requires the following missing aesthetics: `x`.'
-
+4. **... that setting `REQUIRED_AES` to `{"x", "y", "cat"}` is consistent with compute requirements.** The compute assumes data to be a DataFrame with columns `x`, `y`, and `cat`. Specifying `REQUIRED_AES` in your stat can improve your user interface because standard plotnine error messages will issue when required aesthetics are not specified, e.g. "`stat_cat_lm()` requires the following missing aesthetics: `x`."
 :::
 
-
-### Test Stat.
+### Test Stat
 
 You can test out your stat by using it in plotnine `geom_*()` functions.
 
@@ -220,9 +190,7 @@ You can test out your stat by using it in plotnine `geom_*()` functions.
 # You may have noticed ...
 
 **... that we pass the class `stat_cat_lm` to the `stat` argument.** You could also write `geom_point(stat="cat_lm")` which will direct to your new `stat_cat_lm` under the hood.
-
 :::
-
 
 ### Test panel-wise behavior
 
@@ -240,9 +208,7 @@ You can test out your stat by using it in plotnine `geom_*()` functions.
 You might be thinking, what we've done would already be pretty useful to me.  Can I just use my stat as-is within `geom_*()` functions?
 
 The short answer is 'yes'!  If you just want to use the stat yourself locally in a script, there might not be much reason to go on to Step 3, user-facing functions.  But if you have a wider audience in mind, i.e. internal to organization or open sourcing in a package, probably a more succinct expression of what functionality you deliver will be useful - i.e. write the user-facing functions.
-
 :::
-
 
 :::   {.callout-tip collapse="true"}
 # Pro tip: consider using `layer()` function to test instead of `geom_*(stat=stat_new)`
@@ -252,6 +218,8 @@ Instead of using a `geom_*()` function, you might prefer to use the `layer()` fu
 A test of `stat_cat_lm` using this method follows.  You can see it is a little more verbose, as there is no default for the position argument, and setting the size must be handled with a little more care.
 
 ```{python}
+from plotnine.layer import layer
+
 (
     ggplot(penguins_clean)
     + aes(x="bill_depth_mm", y="bill_length_mm", cat="species")
@@ -265,19 +233,15 @@ A test of `stat_cat_lm` using this method follows.  You can see it is a little m
     + labs(title="Testing stat_cat_lm with layer() function")
 )
 ```
-
 :::
-
 
 ## Step 3: Define user-facing functions. Test.
 
-
 In this next section, we define user-facing `geom_*` classes. In plotnine, creating a new geom is as simple as subclassing an existing geom and setting `DEFAULT_PARAMS` with your new stat.
-
 
 ### Define `geom_*()` class
 
-> 'Most plotnine users are accustomed to adding geoms, not stats, when building up a plot.' *ggplot2: Elegant Graphics for Data Analysis*.
+> 'Most users are accustomed to adding geoms, not stats, when building up a plot.' *ggplot2: Elegant Graphics for Data Analysis*.
 
 Because plotnine users may be more accustomed to using layers that have the `geom_` prefix, you might define a `geom_` class with the same properties as the `stat_`. Here we subclass `geom_line` and set the default stat to `"cat_lm"`.
 
@@ -293,7 +257,6 @@ class geom_cat_lm(geom_line):
     }
 ```
 
-
 ::: {.callout-note collapse="false"}
 # You may have noticed...
 
@@ -302,10 +265,9 @@ class geom_cat_lm(geom_line):
 2. **... that `DEFAULT_PARAMS` includes all of `geom_line`'s parameters plus `"stat": "cat_lm"`.** In plotnine, `DEFAULT_PARAMS` is fully replaced (not merged) when subclassing, so every parent parameter must be redeclared.
 :::
 
-
 ## Test/Enjoy functions
 
-Below we use the new function `geom_cat_lm()`, contrasting it to `geom_smooth()`, which have parallel and not parallel slopes respectively.
+Below we use the new function `geom_cat_lm()`, contrasting it to `geom_smooth()`, which produce parallel and non-parallel slopes, respectively.
 
 ```{python}
 #| label: test_geom_cat_lm
@@ -322,7 +284,6 @@ Below we use the new function `geom_cat_lm()`, contrasting it to `geom_smooth()`
 
 Note that because `panel-wise` (facet-wise) computation is specified, there are in fact, two separately estimated models for female and male.  If the model is to be computed across all of the data, it's worth considering layer-wise computation, i.e. specifying the `compute_layer` slot (not yet covered in these tutorials).
 
-
 ```{python}
 #| label: test_facet
 (
@@ -333,8 +294,6 @@ Note that because `panel-wise` (facet-wise) computation is specified, there are 
     + facet_wrap("sex")
 )
 ```
-
-
 
 # Done! Time for a review.
 
@@ -368,7 +327,6 @@ class geom_cat_lm(geom_line):
         "arrow": None,
     }
 ```
-
 :::
 
 # Your Turn: Write `geom_cat_fitted()` and `geom_cat_residuals()`
@@ -380,10 +338,10 @@ Using the `geom_cat_lm` Recipe #4 as a reference, try to create a `geom_cat_fitt
 ## Step 0: use base plotnine to get the job done
 
 ```{pyodide}
-#| setup: true
 #| exercise: geom_cat_fitted_0
-#| warning: false
-
+#| envir: geom_cat_fitted
+#| autorun: true
+#| edit: false
 import pandas as pd
 import statsmodels.formula.api as smf
 from plotnine import *
@@ -421,21 +379,22 @@ penguins_w_fitted = penguins_clean.assign(fitted=model.fittedvalues)
 
 ```{pyodide}
 #| exercise: geom_cat_fitted_1
-# Define.
+#| envir: geom_cat_fitted
+# Define
 def compute_panel_cat_fitted(data, scales=None):
-    model = smf.ols("y ~ x + C(cat)", data=____).fit()
+    model = smf.ols("y ~ x + C(cat)", data=___).fit()
     return data.assign(y=model.fittedvalues)
 
-# Define.
+# Define
 def compute_panel_cat_residuals(data, scales=None):
     model = smf.ols("y ~ x + C(cat)", data=data).fit()
-    return ____.assign(xend=data["x"], yend=model.fittedvalues)
+    return ___.assign(xend=data["x"], yend=model.fittedvalues)
 
 
-# Test. compute_panel_cat_fitted
+# Test compute_panel_cat_fitted
 (
     penguins_clean
-    .rename(columns={"bill_depth_mm": "x", "bill_length_mm": "____", "species": "cat"})
+    .rename(columns={"bill_depth_mm": "x", "bill_length_mm": "___", "species": "cat"})
     [["x", "y", "cat"]]
     .pipe(compute_panel_cat_fitted)
     .head()
@@ -444,26 +403,25 @@ def compute_panel_cat_residuals(data, scales=None):
 
 ### Step 2: Write Stat.
 
-
 ```{pyodide}
 #| exercise: geom_cat_fitted_2
-
-# Define stat_cat_fitted.
+#| envir: geom_cat_fitted
+# Define
 class stat_cat_fitted(stat):
-    REQUIRED_AES = {"x", "____", "cat"}
+    REQUIRED_AES = {"x", "___", "cat"}
     DEFAULT_PARAMS = {"geom": "point"}
 
     def compute_panel(self, data, scales):
         return compute_panel_cat_fitted(data)
 
 
-# Define stat_cat_residuals.
+# Define
 class stat_cat_residuals(stat):
-    REQUIRED_AES = {"x", "y", "____"}
+    REQUIRED_AES = {"x", "y", "___"}
     DEFAULT_PARAMS = {"geom": "segment"}
 
     def compute_panel(self, data, scales):
-        return ____(data)
+        return ___(data)
 
 
 # Test stat_cat_fitted & stat_cat_residuals.
@@ -471,10 +429,9 @@ class stat_cat_residuals(stat):
     ggplot(penguins_clean)
     + aes(x="bill_depth_mm", y="bill_length_mm", cat="species")
     + geom_point(stat=stat_cat_fitted, color="maroon")
-    + geom_segment(stat=____, color="maroon")
+    + geom_segment(stat=___, color="maroon")
     + geom_point()
 )
-
 ```
 
 ### Step 3: Write user-facing geom classes.
@@ -482,24 +439,24 @@ class stat_cat_residuals(stat):
 
 ```{pyodide}
 #| exercise: geom_cat_fitted_3
-# Define geom_cat_fitted
-class geom_cat_fitted(____):
+#| envir: geom_cat_fitted
+# Define
+class geom_cat_fitted(___):
     DEFAULT_PARAMS = {"stat": "cat_fitted"}
 
-# Define geom_cat_residuals
-class geom_cat_residuals(____):
+# Define
+class geom_cat_residuals(___):
     DEFAULT_PARAMS = {"stat": "cat_residuals", "lineend": "butt", "arrow": None}
 
-# Test.
+# Test
 (
     ggplot(penguins_clean)
     + aes(x="bill_depth_mm", y="bill_length_mm", cat="species")
-    + ____(color="maroon")
+    + ___(color="maroon")
     + geom_cat_residuals(color="maroon")
     + geom_point()
 )
 ```
-
 
 # Congratulations!
 

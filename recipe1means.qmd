@@ -2,7 +2,7 @@
 title: "Recipe #1, `geom_medians() and geom_means()`"
 pyodide:
   packages:
-    - plotnine
+    - plotnine>=0.16.0a9
 execute:
   echo: true
   warning: false
@@ -45,7 +45,6 @@ Let's get started!  Our objective in this first 'recipe' is to be able to compos
 )
 ```
 
-
 ```{python}
 #| echo: false
 #| warning: false
@@ -70,7 +69,6 @@ In this exercise, we'll demonstrate how to define the new extension function `ge
 
 ---
 
-
 ## Step 00: Loading packages and prepping data
 
 <!-- Handling missingness is not a discussion of this tutorial, so we'll only use complete cases. -->
@@ -84,9 +82,7 @@ penguins.head()
 
 ## Step 0: use base plotnine to get the job done
 
-
 It's a good idea to get things done without `stat` extension first, just using 'base' plotnine. The computational moves you make here can serve a reference for building our extension function.
-
 
 ```{python}
 #| label: penguins
@@ -108,7 +104,6 @@ penguins_medians = pd.DataFrame(
 )
 ```
 
-
 ::: {.callout-tip collapse="true"}
 ### Pro tip.  Use `ggplot.layer_data()` to inspect plotnine\'s internal data ...
 
@@ -118,7 +113,6 @@ Use `ggplot.layer_data()` to inspect the render-ready data internal in the plot.
 last_plot().layer_data(i=1) # layer 2, the computed means, is of interest
 ```
 :::
-
 
 ## Step 1: Define compute. Test.
 
@@ -142,7 +136,6 @@ def compute_group_medians(data, scales=None):
 2. **... that the compute function can only be used with data with variables `x` and `y`.**  These aesthetic variable names, relevant for building the plot, are generally not found in the raw data inputs for the plot.
 :::
 
-
 ### Test compute.
 
 ```{python}
@@ -165,13 +158,11 @@ def compute_group_medians(data, scales=None):
 **... that we prepare the data to have columns with names `x` and `y` before testing.**  Computation will fail if variables `x` and `y` are not present given the function's definition.  In a plotting setting, columns are renamed by mapping aesthetics, e.g. `aes(x="bill_depth", y="bill_length")`.
 :::
 
-
 ## Step 2: Define new Stat. Test.
 
 Next, we define a new _stat_ by subclassing plotnine's `stat` class - which will let us do computation under the hood while building our plot.
 
 ### Define Stat.
-
 
 ```{python}
 #| label: stat_medians
@@ -223,8 +214,6 @@ You can test out your _stat_ by using it in plotnine `geom_*()` functions.
 
 Test group-wise behavior by using a discrete variable with an group-triggering aesthetic like color, fill, or group, or by faceting.
 
-
-
 ```{python}
 last_plot() + aes(color="species")
 ```
@@ -237,14 +226,12 @@ You might be thinking, what we've done would already be pretty useful to me.  Ca
 The short answer is 'yes'!  If you just want to use the Stat yourself locally in a script, there might not be much reason to go on to Step 3, user-facing functions.  But if you have a wider audience in mind, i.e. internal to organization or open sourcing in a package, probably a more succinct expression of what functionality you deliver will be useful - i.e. write the user-facing functions.
 :::
 
-
 :::   {.callout-tip collapse="true"}
 # Pro tip: consider using `layer()` function to test instead of `geom_*(stat = StatNew)`
 
 Instead of using a `geom_*()` function, you might prefer to use the `layer()` function in your testing step.  Occasionally, you *must* to go this route; for example, `geom_vline()` contain no `stat` argument, but you can use the GeomVline in `layer()`.  If you are teaching this content, using `layer()` may help you better connect this step with the next, defining the user-facing functions.  
 
 A test of `stat_medians` using this method follows.  You can see it is a little more verbose, as there is no default for the position argument, and setting the size must be handled with a little more care.
-
 
 ```{python}
 (
@@ -260,9 +247,7 @@ A test of `stat_medians` using this method follows.  You can see it is a little 
     + labs(title = "Testing stat_medians with layer() function")
 )
 ```
-
 :::
-
 
 ## Step 3: Define user-facing functions. Test.
 
@@ -279,13 +264,12 @@ class geom_medians(geom_point):
     DEFAULT_PARAMS = {"stat": "medians"}
 ```
 
-
 ### Test/Enjoy your `geom_medians()` function!
 
 ### Test geom_medians()
 
 ```{python}
-## Test user-facing.
+## Test user-facing
 
 (
     ggplot(penguins)
@@ -312,7 +296,6 @@ last_plot() + aes(color="species")
 )
 ```
 
-
 # Done! Time for a review.
 
 Here is a quick review of the functions and classes we've covered, dropping tests and discussion.
@@ -323,7 +306,6 @@ Here is a quick review of the functions and classes we've covered, dropping test
 # Step 1. Define compute
 def compute_group_medians(data, scales=None):
     return pd.DataFrame([data[["x", "y"]].median()])
-
 
 # Step 2. Define Stat
 class stat_medians(stat):
@@ -337,25 +319,19 @@ class stat_medians(stat):
 class geom_medians(geom_point):
     DEFAULT_PARAMS = {"stat": "medians"}
 ```
-
-
 :::
-
 
 # Your Turn: write `geom_means()`
 
 Using the `geom_medians` Recipe #1 as a reference, try to create a `geom_means()` function that draws a point at the means of x and y. You may also write convenience geom_*() functions. 
 
 ### Step 00: load libraries, data
-```{pyodide}
-#| setup: true
-#| exercise:
-#|   - geom_means_1
-#|   - geom_means_2
-#|   - geom_means_3
-#|   - geom_means_4
-#| warning: false
 
+```{pyodide}
+#| exercise: geom_means_0
+#| envir: geom_means
+#| autorun: true
+#| edit: false
 import pandas as pd
 
 from plotnine import *
@@ -369,9 +345,7 @@ penguins.head()
 
 ```{pyodide}
 #| exercise: geom_means_1
-#| warning: False
-# Step 0: Use base plotnine to get the job done
-
+#| envir: geom_means
 penguins_means = pd.DataFrame(
    [penguins[["bill_length_mm", "___"]].___()]
 ).add_prefix("mean_")
@@ -393,12 +367,12 @@ penguins_means = pd.DataFrame(
 
 ```{pyodide}
 #| exercise: geom_means_2
-# Define.
-
+#| envir: geom_means
+# Define
 def compute_group_means(data, scales=None):
     return pd.DataFrame([data[["x", "y"]].mean()])
 
-# Test.
+# Test
 (
     penguins
     .rename(
@@ -415,7 +389,8 @@ def compute_group_means(data, scales=None):
 
 ```{pyodide}
 #| exercise: geom_means_3
-# Define stat_means
+#| envir: geom_means
+# Define
 class stat_means(stat):
     REQUIRED_AES = {"x", "y"}
     DEFAULT_PARAMS = {"geom": "point"}
@@ -423,8 +398,7 @@ class stat_means(stat):
     def compute_group(self, data, scales):
         return ___(data)
 
-
-# Test.
+# Test
 (
   ggplot(penguins)
   + aes(x="bill_depth_mm", y="bill_length_mm")
@@ -433,26 +407,23 @@ class stat_means(stat):
 )
 ```
 
-
 ### Step 3: Write Geom.
 
 ```{pyodide}
 #| exercise: geom_means_4
-# Define geom_means
+#| envir: geom_means
+# Define
 class geom_means(geom_point):
     DEFAULT_PARAMS = {"stat": "___"}
 
-# Test.
+# Test
 (
   ggplot(penguins)
   + aes(x="bill_depth_mm", y="bill_length_mm")
   + geom_point()
-  + ____(size=8, color="red")
+  + ___(size=8, color="red")
 )
 ```
-
-
-
 
 # Next up: Recipe 2 `geom_id()`
 

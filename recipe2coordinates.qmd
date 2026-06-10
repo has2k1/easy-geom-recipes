@@ -2,29 +2,14 @@
 title: "Recipe #2, `geom_index() and geom_coordinates()`"
 pyodide:
   packages:
-    - plotnine
+    - plotnine>=0.16.0a9
+    - adjustText
+  resources:
+    - cars.csv
 execute:
   echo: true
   warning: false
-resources:
-    - cars.csv
 ---
-
-```{pyodide}
-#| label: pyodide-filesystem
-#| echo: false
-# "Download" file to pyodide's filesystem
-from pyodide.http import pyfetch
-from pathlib import Path
-
-async def download_to_fs(url: str):
-    response = await pyfetch(url)
-    response.raise_for_status()
-    data = await response.bytes()
-    Path(Path(url).name).write_bytes(data)
-
-await download_to_fs("/cars.csv")
-```
 
 ```{python}
 #| label: imports
@@ -37,7 +22,6 @@ from plotnine.session import last_plot
 
 # The Goal
 
-
 In the last recipe, you should have seen and practiced how to write a compute function that can be used in a stat. Specifically, you defined group-wise computation by defining `compute_group` in your stat class. You specified that other behavior should be inherited from the more generic `stat` class. You improved the user interface for your stat by specifying which aesthetics must be provided by the user in `REQUIRED_AES`. Finally you wrote user-facing `stat_*` and `geom_*` classes based on the new stat and an existing geom.
 
 In this next recipe, we'll first see the creation of `stat_index` and `geom_index`, which can be used to label observations with their row numbers.
@@ -47,7 +31,6 @@ Along the way, we'll contrast a **new extension move** - defining *panel-wise* i
 In the exercise for this recipe, you'll create `stat_coordinates` and `geom_coordinates`, usable to mark points with their `x` and `y` coordinates.
 
 Let's get started! By the end of the exercise, we should be able to specify the plot below with the new `geom_coordinates()` function:
-
 
 ```python
 (
@@ -91,7 +74,6 @@ data = (
 
 But, we'll start by demonstrating how to annotate the observation index (row number) at x and y, defining the new extension function `geom_index()`. Then you'll be prompted to define `geom_coordinates()` based on what you've learned.
 
-
 ## Step 00: Loading packages and data
 
 We'll define the `cars` dataset as a DataFrame with columns `speed` and `dist` (equivalent to R's built-in `cars` dataset).
@@ -103,17 +85,12 @@ cars = pd.read_csv("cars.csv")
 cars
 ```
 
-
-
 ## Step 0: use base plotnine to get the job done
-
 
 It's good idea to go through how you'd get things done without extension first, just using 'base' plotnine. The computational moves you make here can serve as a reference for building our extension function.
 
-
 ```{python}
 #| label: base-approach
-# Compute.
 (
     ggplot(cars.assign(index=range(1, len(cars) + 1)))
     + aes(x="speed", y="dist", label="index")
@@ -122,7 +99,6 @@ It's good idea to go through how you'd get things done without extension first, 
     + labs(title="Created with base plotnine")
 )
 ```
-
 
 ::: {.callout-tip  collapse="true"}
 ### Pro tip.  Use `ggplot.layer_data()` to inspect plotnine's internal data ...
@@ -138,12 +114,10 @@ last_plot().layer_data(i=1).head()  # layer 2, with labels designated is of inte
 
 Now you are ready to begin building your extension function. The first step is to define the compute that should be done under-the-hood when your function is used.  We'll define this in a function called `compute_group_index()`.  The `data` input will look similar to the plot data.  You will also need to include a `scales` argument, which plotnine uses internally.
 
-### Define compute.
+### Define compute
 
 ```{python}
 #| label: compute_group_index
-
-# Define compute.
 def compute_group_index(data, scales=None):
     return data.assign(label=range(1, len(data) + 1))
 ```
@@ -158,11 +132,10 @@ def compute_group_index(data, scales=None):
 3. **... that the compute function adds a column of data called 'label' internally.**  This means that the stat can be used with geoms like `geom_text` and `geom_label` without the user providing a label!
 :::
 
-
-### Test compute.
+### Test compute
 
 ```{python}
-# Test compute.
+# Test compute
 (
     cars
     .rename(columns={"speed": "x", "dist": "y"})
@@ -183,7 +156,7 @@ Next, we define a new stat class — which will let us do computation under the 
 
 <!-- https://ggplot2.tidyverse.org/reference/ggproto.html -->
 
-### Define Stat.
+### Define `stat`
 
 ```{python}
 #| label: stat_index
@@ -210,8 +183,7 @@ class stat_index(stat):  # <1> <2>
 
 :::
 
-
-### Test Stat.
+### Test `stat`
 
 You can test out your stat by using it in plotnine `geom_*()` functions.
 
@@ -225,17 +197,15 @@ You can test out your stat by using it in plotnine `geom_*()` functions.
 )
 ```
 
-
 ::: {.callout-note collapse="false"}
 # You may have noticed ...
 
 **... that we pass the class `stat_index` to the `stat` argument. But you could also use the string!**  If you prefer, you could write `geom_text(stat="index")` which will direct to your new `stat_index` under the hood.
 :::
 
-### Test Stat group-wise behavior
+### Test `stat` group-wise behavior
 
 Test group-wise behavior by using a discrete variable with a group-triggering aesthetic like color, fill, or group, or by faceting.
-
 
 ```{python}
 last_plot() + aes(color="speed > 15")
@@ -343,11 +313,10 @@ class geom_index(geom_label):
 2. **... that `DEFAULT_PARAMS` includes all of `geom_label`'s parameters plus `"stat": "index"`.** In plotnine, `DEFAULT_PARAMS` is fully replaced (not merged) when subclassing, so every parent parameter must be redeclared.
 :::
 
-
 ### Test geom_index()
 
 ```{python}
-## Test user-facing.
+## Test user-facing
 (
     ggplot(cars)
     + aes(x="speed", y="dist")
@@ -415,9 +384,7 @@ class geom_index(geom_label):
         "tooth_size": None,
     }
 ```
-
 :::
-
 
 # Your Turn: write `geom_coordinates()`
 
@@ -426,9 +393,10 @@ Using the `geom_index()` Recipe #2 as a reference, try to create a `stat_coordin
 ### Step 00: load libraries, data
 
 ```{pyodide}
+#| exercise: geom_coordinates_0
 #| envir: geom_coordinates
 #| autorun: true
-#| warning: false
+#| edit: false
 import pandas as pd
 from plotnine import *
 from plotnine.stats.stat import stat
@@ -443,6 +411,7 @@ cars.head()
 #| exercise: geom_coordinates_1
 #| envir: geom_coordinates
 #| autorun: true
+#| edit: false
 (
     ggplot(
        cars.assign(
@@ -464,6 +433,7 @@ cars.head()
 ```{pyodide}
 #| exercise: geom_coordinates_2
 #| envir: geom_coordinates
+# Define
 def compute_group_coordinates(data, scales=None):
     return data.assign(
         # which aes are you defining: x, color, label, linewidth?
@@ -473,7 +443,7 @@ def compute_group_coordinates(data, scales=None):
 # Test
 (
     cars
-    .rename(columns={"speed": "x", "dist": "____"})
+    .rename(columns={"speed": "x", "dist": "___"})
     .pipe(compute_group_coordinates)
     .head()
 )
@@ -481,16 +451,16 @@ def compute_group_coordinates(data, scales=None):
 
 ### Step 2: Write Stat.
 
-
 ```{pyodide}
 #| exercise: geom_coordinates_3
 #| envir: geom_coordinates
+# Define
 class stat_coordinates(stat):
-    REQUIRED_AES = {"x", "____"}
+    REQUIRED_AES = {"x", "___"}
     DEFAULT_PARAMS = {"geom": "text"}
 
     def compute_group(self, data, scales):
-        return ____(data)
+        return ___(data)
 
 # Test
 (
@@ -498,7 +468,7 @@ class stat_coordinates(stat):
     + aes(x="speed", y="dist")
     + geom_point()
     + geom_text(
-        stat=____,
+        stat=___,
         ha="right",
         va="top",
         adjust_text={"arrowprops": {"arrowstyle": "-"}},
@@ -511,7 +481,8 @@ class stat_coordinates(stat):
 ```{pyodide}
 #| exercise: geom_coordinates_4
 #| envir: geom_coordinates
-class geom_coordinates(____):
+# Define
+class geom_coordinates(___):
     DEFAULT_PARAMS = {
         "stat": "coordinates",
         "parse": False,
@@ -527,14 +498,13 @@ class geom_coordinates(____):
     ggplot(cars)
     + aes(x="speed", y="dist")
     + geom_point()
-    + ____(
+    + ___(
         ha="right",
         va="top",
         adjust_text={"arrowprops": {"arrowstyle": "-"}},
     )
 )
 ```
-
 
 # Next up: Recipe 3 `geom_bal_point()` and `geom_support()`
 

@@ -2,39 +2,17 @@
 title: "Recipe 3: geom_bal_point() and geom_support()"
 pyodide:
   packages:
-    - plotnine
+    - plotnine>=0.16.0a9
 execute:
   echo: true
   warning: false
 ---
-
-```{python}
-#| label: imports
-
-import pandas as pd
-from plotnine import *
-from plotnine.layer import layer
-from plotnine.stats.stat import stat
-from plotnine.session import last_plot
-
-survey_df = pd.DataFrame({
-    "response": pd.Categorical(
-        ["Awful", "Bad", "Neutral", "Good", "Amazing"],
-        categories=["Awful", "Bad", "Neutral", "Good", "Amazing"],
-        ordered=True,
-    ),
-    "freq": [1, 6, 9, 7, 3],
-})
-```
-
-
 
 In the first two recipes, you defined compute that would work group-wise. In recipe #2 we briefly contrasted a panel-wise computation specification with our group-wise computation (see `stat_index_panel`).  We saw that when introducing a categorical variable using `stat_index_panel`, indices were computed *across* the groups, instead of within groups -- the behavior for `stat_index`.
 
 In this recipe, we'll use *panel-wise* computation throughout to look at the 'balance' of the frequency of discrete ordinal variables.  Panel-wise compute is needed because of the discrete variable mapping, i.e. `aes(x="response")`.  So that the data isn't broken up by category (unique responses), we define `compute_panel` instead of `compute_group`.
 
 Our goal is to be able to write the following code, producing the plot that follows.
-
 
 ```python
 survey_df = pd.DataFrame({
@@ -55,11 +33,11 @@ survey_df = pd.DataFrame({
 )
 ```
 
-
-```{pyodide}
+```{python}
 #| echo: false
 #| warning: false
 import pandas as pd
+
 from plotnine import *
 
 survey_df = pd.DataFrame({
@@ -71,7 +49,7 @@ survey_df = pd.DataFrame({
     "freq": [1, 6, 9, 7, 3],
 })
 
-x_numeric = survey_df["response"].cat.codes + 1
+x_numeric = survey_df["response"].cat.codes.astype(int) + 1
 bal_x = (x_numeric * survey_df["freq"]).sum() / survey_df["freq"].sum()
 balancing_point_df = pd.DataFrame({"x": [bal_x], "y": [0]})
 
@@ -102,8 +80,9 @@ It's a good idea to look at how you'd get things done without extension first, j
 
 ```{python}
 #| label: base-approach
-
 import pandas as pd
+
+from plotnine import *
 
 survey_df = pd.DataFrame({
     "response": pd.Categorical(
@@ -114,7 +93,7 @@ survey_df = pd.DataFrame({
     "freq": [1, 6, 9, 7, 3],
 })
 
-x_numeric = survey_df["response"].cat.codes + 1
+x_numeric = survey_df["response"].cat.codes.astype(int) + 1
 bal_x = (x_numeric * survey_df["freq"]).sum() / survey_df["freq"].sum()
 balancing_point_df = pd.DataFrame({"x": [bal_x], "y": [0]})
 
@@ -130,8 +109,6 @@ balancing_point_df = pd.DataFrame({"x": [bal_x], "y": [0]})
 )
 ```
 
-
-
 ## Step 1: Define compute. Test.
 
 Now you are ready to begin building your extension function. The first step is to define the compute that should be done under-the-hood when your function is used.  We'll define this in a function called `compute_panel_bal_point()`.  You will also need to include a `scales` argument, which plotnine uses internally. Because the x scale is converted to numeric early on in plotnine's plot build - the compute is even simpler - you don't need to convert your x variable to numeric as was required in Step 0!
@@ -144,7 +121,6 @@ def compute_panel_bal_point(data, scales=None):
     return data.head(1).assign(x=x_bal, y=0)
 ```
 
-
 ::: {.callout-note collapse="false"}
 # You may have noticed ...
 
@@ -155,12 +131,9 @@ def compute_panel_bal_point(data, scales=None):
 3. **... that we use `data.head(1).assign(...)` to build the result.**  This preserves internal columns (like `PANEL` and `group`) that plotnine needs for rendering. Creating a brand-new DataFrame would lose these columns.
 :::
 
-
 ### Test compute.
 
-
 ```{python}
-## Test compute.
 (
     survey_df
     .assign(x=survey_df["response"].cat.codes + 1)
@@ -175,15 +148,11 @@ def compute_panel_bal_point(data, scales=None):
 **... that we prepare the data to have columns with names `x` and `y` before testing `compute_panel_bal_point`.** Computation will fail if the names `x` and `y` are not present given our function definition.  Internally in a plot, columns are named based on aesthetic mapping, e.g. `aes(x="response", y="freq")`.
 :::
 
-
-
 ## Step 2: Define new Stat. Test.
-
 
 Next, we define a new stat class — which will let us do computation under the hood while building our plot.
 
 ### Define Stat.
-
 
 ```{python}
 #| label: stat_bal_point
@@ -198,7 +167,6 @@ class stat_bal_point(stat):  # <1> <2>
         return compute_panel_bal_point(data)
 ```
 
-
 ::: {.callout-note collapse="false"}
 # You may have noticed ...
 
@@ -206,10 +174,9 @@ class stat_bal_point(stat):  # <1> <2>
 2. **... that we inherit from the `stat` class.**  In fact, your class is a *subclass* — you are inheriting class properties from plotnine's `stat`.
 
 3. **... that the `compute_panel_bal_point` function is called in the `compute_panel` method.** This means that data will be transformed panel-wise (by facet), not group-wise.
-4. **... that setting `REQUIRED_AES` to `{"x", "y"}` is consistent with compute requirements.** The compute assumes data to be a DataFrame with columns `x` and `y`. Specifying `REQUIRED_AES` in your stat can improve your user interface because standard plotnine error messages will issue when required aesthetics are not specified.
+4. **... that setting `REQUIRED_AES` to `{"x", "y"}` is consistent with compute requirements.** The compute assumes data to be a DataFrame with columns `x` and `y`. Specifying `REQUIRED_AES` in your stat can improve your user interface because standard plotnine error messages will issue when required aesthetics are not specified, e.g. "`stat_bal_point()` requires the following missing aesthetics: `x`."
 
 :::
-
 
 ### Test Stat.
 
@@ -232,9 +199,6 @@ You can test out your stat by using it in plotnine `geom_*()` functions.
 
 :::
 
-
-
-
 :::  {.callout-tip collapse="true"}
 # Pro tip: Think about an early exit (don't define a user-facing function) ...
 
@@ -244,7 +208,6 @@ The short answer is 'yes'!  If you just want to use the stat yourself locally in
 
 :::
 
-
 :::   {.callout-tip collapse="true"}
 # Pro tip: consider using `layer()` function to test instead of `geom_*(stat=stat_new)`
 
@@ -253,6 +216,8 @@ Instead of using a `geom_*()` function, you might prefer to use the `layer()` fu
 A test of `stat_bal_point` using this method follows.  You can see it is a little more verbose, as there is no default for the position argument, and setting the size must be handled with a little more care.
 
 ```{python}
+from plotnine.layer import layer
+
 (
     ggplot(survey_df)
     + aes(x="response", y="freq")
@@ -266,19 +231,15 @@ A test of `stat_bal_point` using this method follows.  You can see it is a littl
     + labs(title="Testing stat_bal_point with layer() function")
 )
 ```
-
 :::
-
 
 ## Step 3: Define user-facing functions. Test.
 
-
 In this next section, we define user-facing `geom_*` classes. In plotnine, creating a new geom is as simple as subclassing an existing geom and setting `DEFAULT_PARAMS` with your new stat.
-
 
 ### Define `geom_*()` class
 
-> 'Most plotnine users are accustomed to adding geoms, not stats, when building up a plot.' *ggplot2: Elegant Graphics for Data Analysis*.
+> 'Most users are accustomed to adding geoms, not stats, when building up a plot.' *ggplot2: Elegant Graphics for Data Analysis*.
 
 Because plotnine users may be more accustomed to using layers that have the `geom_` prefix, you might define a `geom_` class with the same properties as the `stat_`. Here we subclass `geom_point` and set the default stat to `"bal_point"`.
 
@@ -288,7 +249,6 @@ Because plotnine users may be more accustomed to using layers that have the `geo
 class geom_bal_point(geom_point):
     DEFAULT_PARAMS = {"stat": "bal_point"}
 ```
-
 
 ## Test/Enjoy functions
 
@@ -301,7 +261,6 @@ class geom_bal_point(geom_point):
     + geom_bal_point(color="magenta", size=7)
 )
 ```
-
 
 # Done! Time for a review.
 
@@ -328,7 +287,6 @@ class stat_bal_point(stat):
 class geom_bal_point(geom_point):
     DEFAULT_PARAMS = {"stat": "bal_point"}
 ```
-
 :::
 
 # Your Turn: Write `geom_support()`
@@ -337,18 +295,18 @@ Using the `geom_bal_point` Recipe #3 as a reference, try to create a `stat_suppo
 
 ### Hint: consider what aesthetics are required for segments.  We'll give you Step 0 this time...
 
-
-
 ## Step 0: use base plotnine to get the job done
 
 ```{pyodide}
-#| setup: true
 #| exercise: geom_support_0
-#| warning: false
-
+#| envir: geom_support
+#| autorun: true
+#| edit: false
 import pandas as pd
+
 from plotnine import *
 from plotnine.stats.stat import stat
+from plotnine.geoms.geom import geom
 
 survey_df = pd.DataFrame({
     "response": pd.Categorical(
@@ -360,7 +318,7 @@ survey_df = pd.DataFrame({
 })
 
 # step 0: use base plotnine
-x_numeric = survey_df["response"].cat.codes + 1
+x_numeric = survey_df["response"].cat.codes.astype(int) + 1
 response_min_max_df = pd.DataFrame({
     "x": [x_numeric.min()],
     "xend": [x_numeric.max()],
@@ -383,19 +341,19 @@ response_min_max_df = pd.DataFrame({
 
 ### Step 1: Write compute function. Test.
 
-
 ```{pyodide}
 #| exercise: geom_support_1
-# Define.
+#| envir: geom_support
+# Define
 def compute_panel_support(data, scales=None):
     return data.head(1).assign(
         x=data["x"].min(),
-        xend=____(data["x"]),
+        xend=data["x"].___(),
         y=0,
-        ____ = 0,
+        ___=0,
     )
 
-# Test.
+# Test
 (
     survey_df
     .assign(x=survey_df["response"].cat.codes + 1)
@@ -404,25 +362,25 @@ def compute_panel_support(data, scales=None):
 )
 ```
 
-### Step 2: Write Stat.
-
+### Step 2: Write Stat
 
 ```{pyodide}
 #| exercise: geom_support_2
-# Define.
+#| envir: geom_support
+# Define
 class stat_support(stat):
-    REQUIRED_AES = {"____"}
+    REQUIRED_AES = {"___"}
     DEFAULT_PARAMS = {"geom": "segment"}
 
     def compute_panel(self, data, scales):
-        return ____(data)
+        return ___(data)
 
-# Test.
+# Test
 (
     ggplot(survey_df)
     + aes(x="response", y="freq")
     + geom_col()
-    + geom_segment(stat=____, color="magenta")
+    + geom_segment(stat=___, color="magenta")
 )
 
 ```
@@ -431,19 +389,19 @@ class stat_support(stat):
 
 ```{pyodide}
 #| exercise: geom_support_3
-# Define.
-class geom_support(____):
+#| envir: geom_support
+# Define
+class geom_support(___):
     DEFAULT_PARAMS = {"stat": "support", "lineend": "butt", "arrow": None}
 
-# Test.
+# Test
 (
     ggplot(survey_df)
     + aes(x="response", y="freq")
     + geom_col()
-    + ____(color="magenta", size=2)
+    + ___(color="magenta", size=2)
 )
 ```
-
 
 ##  Next up, Recipe 4: `geom_cat_lm()`
 

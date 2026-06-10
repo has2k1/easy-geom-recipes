@@ -3,7 +3,7 @@
 .RData
 .Ruserdata
 survey
-\docs
+docs
 _site/*
 /.quarto/
 survey_results_summary_files/*
@@ -11,4 +11,5 @@ survey_results_summary_files/*
 */*-html
 **/*.quarto_ipynb
 **/*.quarto_ipynb_*
+hero-image.png
 uv.lock

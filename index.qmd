@@ -8,12 +8,13 @@ execute:
 ```{python}
 #| label: hero-image
 #| output: false
-
 import numpy as np
 import pandas as pd
+from PIL import Image
 from plotnine import *
+from plotnine.composition import inset_element
 
-# Honeycomb grid: 5 rows × 10 cols of hexagons
+# Honeycomb grid: 5 rows × 10 cols of pointy-top hexagons
 centers = []
 for row in range(5):
     for col in range(10):
@@ -23,12 +24,14 @@ for row in range(5):
             x += np.sqrt(3) / 2
         centers.append((x, y))
 
-angles = np.linspace(0, 2 * np.pi, 7)
+# Vertices at 90°, 150°, ... give pointy-top hexagons; radius < 1 leaves gaps
+angles = np.linspace(0, 2 * np.pi, 7) + np.pi / 2
+radius = 1
 hex_data = pd.concat(
     [
         pd.DataFrame({
-            "x": cx + np.cos(angles),
-            "y": cy + np.sin(angles),
+            "x": cx + radius * np.cos(angles),
+            "y": cy + radius * np.sin(angles),
             "group": i,
         })
         for i, (cx, cy) in enumerate(centers)
@@ -36,16 +39,27 @@ hex_data = pd.concat(
     ignore_index=True,
 )
 
+# plotnine hex logo over the grid, left of center; the image keeps its
+# aspect ratio and is centered within the inset area
+logo = Image.open("plotnine-hex-logo.png")
+d = 0.25
+
 (
     ggplot(hex_data, aes(x="x", y="y", group="group"))
-    + geom_polygon(fill="#dcdcdc", color="white", size=2)
+    + geom_polygon(fill="#F4F4F4", color="#828282", size=1.5)
     + coord_equal()
     + theme_void()
     + theme(
         figure_size=(8, 3.5),
-        plot_background=element_rect(fill="white", color="white"),
+        dpi=150,
+        plot_background=element_rect(fill="#F6F6F6"),
+        panel_background=element_rect(fill="#F6F6F6"),
+        plot_margin=0.01,
     )
-).save("hero-image.png", dpi=150, verbose=False)
+    + inset_element(logo, left=0.5-d, bottom=0.5-d, right=0.5+d, top=0.5+d)
+    
+).save("hero-image.png", verbose=False)
+
 ```
 
 ![](hero-image.png)

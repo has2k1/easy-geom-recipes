@@ -2,7 +2,7 @@
 title: "Recipe #2, `geom_index() and geom_coordinates()`"
 pyodide:
   packages:
-    - plotnine>=0.16.0a9
+    - plotnine==0.16.0a9
     - adjustText
   resources:
     - cars.csv

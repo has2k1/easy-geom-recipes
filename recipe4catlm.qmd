@@ -2,7 +2,7 @@
 title: "Recipe 4: geom_cat_lm(), geom_cat_fitted(), and geom_cat_residuals()"
 pyodide:
   packages:
-    - plotnine>=0.16.0a9
+    - plotnine==0.16.0a9
 ---
 
 # Example recipe #4:  `geom_cat_lm()`

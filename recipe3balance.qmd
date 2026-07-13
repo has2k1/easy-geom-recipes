@@ -2,7 +2,7 @@
 title: "Recipe 3: geom_bal_point() and geom_support()"
 pyodide:
   packages:
-    - plotnine>=0.16.0a9
+    - plotnine==0.16.0a9
 execute:
   echo: true
   warning: false

@@ -2,7 +2,7 @@
 title: "Recipe #1, `geom_medians() and geom_means()`"
 pyodide:
   packages:
-    - plotnine>=0.16.0a9
+    - plotnine==0.16.0a9
 execute:
   echo: true
   warning: false
